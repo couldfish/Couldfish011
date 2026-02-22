@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>couldfish · Erbil 3D bio</title>
+  <!-- fonts & icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      height: 100vh;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      color: white;
+      background: #030514;
+      height: 100%;
+      overflow: visible;
+    }
+
+    #three-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .sections {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+    }
+
+    .section {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      backdrop-filter: blur(2px);
+    }
+
+    .glass-card {
+      background: rgba(8, 15, 30, 0.35);
+      backdrop-filter: blur(16px) saturate(250%);
+      -webkit-backdrop-filter: blur(16px) saturate(250%);
+      border-radius: 80px 80px 80px 80px / 60px 60px 60px 60px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 40px 70px rgba(0, 10, 30, 0.8), 0 0 0 1px rgba(120, 200, 255, 0.25) inset, 0 0 50px rgba(0, 180, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      width: 100%;
+      max-width: 620px;
+      transition: transform 0.3s ease, box-shadow 0.4s ease;
+      transform-style: preserve-3d;
+      transform: rotateX(1deg) rotateY(0.5deg);
+    }
+
+    .glass-card:hover {
+      transform: rotateX(0.5deg) rotateY(1deg) translateZ(10px);
+      box-shadow: 0 50px 90px rgba(0, 30, 70, 0.9), 0 0 0 2px rgba(100, 200, 255, 0.4) inset, 0 0 80px #0088ff;
+    }
+
+    .avatar-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.4rem;
+      filter: drop-shadow(0 15px 25px #0055aa80);
+    }
+
+    .avatar {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #00c3ff, #3f5eff, #a07aff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4.5rem;
+      box-shadow: 0 25px 35px rgba(0, 100, 255, 0.6), 0 0 0 4px rgba(255, 255, 255, 0.3);
+      animation: liquid-float 4s infinite alternate ease-in-out;
+    }
+
+    @keyframes liquid-float {
+      0% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; transform: translateY(0) scale(1); }
+      100% { border-radius: 40% 60% 60% 40% / 50% 40% 60% 50%; transform: translateY(-8px) scale(1.02); }
+    }
+
+    .name {
+      font-size: 3.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-align: center;
+      line-height: 1;
+      background: linear-gradient(145deg, #ffffff, #b2ebff, #aac9ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px #1e90ff, 0 0 20px #0066cc;
+      margin-bottom: 0.4rem;
+    }
+
+    /* location card with google map embed */
+    .location-container {
+      margin: 1.2rem 0 1.8rem;
+      border-radius: 60px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 215, 0, 0.5);
+      box-shadow: 0 0 30px #ffd96680;
+      background: #111;
+      height: 160px;
+    }
+
+    .location-container iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      pointer-events: auto;
+    }
+
+    .location-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0, 40, 70, 0.7);
+      backdrop-filter: blur(10px);
+      padding: 0.7rem 1.8rem;
+      border-radius: 60px;
+      margin: 0.8rem auto 0.2rem;
+      border: 1px solid gold;
+      font-size: 1.2rem;
+    }
+
+    .tagline {
+      display: flex;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .tagline-item {
+      background: rgba(0, 191, 255, 0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.5rem 1.4rem;
+      border-radius: 60px;
+      font-size: 1rem;
+      color: #e6f3ff;
+    }
+
+    .tagline-item i { margin-right: 6px; color: #80c4ff; }
+
+    .bio-description {
+      text-align: center;
+      font-size: 1.15rem;
+      margin: 1.2rem 0 1.8rem;
+      line-height: 1.6;
+      color: rgba(240, 248, 255, 0.95);
+      background: rgba(0, 20, 40, 0.2);
+      padding: 1rem 1.8rem;
+      border-radius: 70px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .section-header {
+      font-size: 2.2rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(130deg, #ffffff, #b0e0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .work-grid, .contact-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      margin: 2rem 0;
+    }
+
+    .work-item, .contact-item {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+      border-radius: 50px;
+      padding: 1.2rem 2rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      font-size: 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .work-item i, .contact-item i {
+      font-size: 1.8rem;
+      width: 2.2rem;
+      color: #6db3ff;
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin: 2rem 0 1rem;
+      flex-wrap: wrap;
+    }
+
+    .social-icon {
+      background: rgba(20, 40, 70, 0.6);
+      backdrop-filter: blur(8px);
+      width: 60px;
+      height: 60px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: white;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: all 0.25s;
+    }
+
+    .social-icon:hover {
+      transform: translateY(-8px) scale(1.1);
+      background: #1e5f9e;
+      border-color: white;
+      box-shadow: 0 20px 30px #0066ff;
+    }
+
+    /* specific handle style */
+    .handle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 40px;
+      padding: 0.6rem 1.4rem;
+      margin: 0.5rem 0;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 1rem;
+    }
+    .handle-row i {
+      width: 2rem;
+      color: #80c4ff;
+    }
+
+    .foot-note {
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.6;
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+    }
+
+    .nav-dots {
+      position: fixed;
+      right: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(200, 220, 255, 0.5);
+      border: 2px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 0 15px cyan;
+    }
+
+    .nav-dot.active {
+      background: white;
+      border-color: #0099ff;
+      transform: scale(1.6);
+      box-shadow: 0 0 25px #00a6ff;
+    }
+
+    @media (max-width: 700px) {
+      .nav-dots { display: none; }
+      .glass-card { padding: 2rem 1.2rem; }
+      .name { font-size: 2.8rem; }
+      .location-container { height: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="three-canvas"></div>
+
+  <div class="nav-dots">
+    <div class="nav-dot active" data-index="0"></div>
+    <div class="nav-dot" data-index="1"></div>
+    <div class="nav-dot" data-index="2"></div>
+    <div class="nav-dot" data-index="3"></div>
+  </div>
+
+  <div class="sections">
+
+    <!-- SECTION 0: HOME with handles integrated -->
+    <section class="section" id="home">
+      <div class="glass-card">
+        <div class="avatar-wrapper">
+          <div class="avatar">🐟</div>
+        </div>
+        <div class="name">couldfish</div>
+        
+        <!-- Google Maps location: Erbil -->
+        <div class="location-container">
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d52191.46683960175!2d43.999978!3d36.190073!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x400701a6b3d5f3b5%3A0x8c5f8c9d9b0a0f0!2sErbil%2C%20Iraq!5e0!3m2!1sen!2s!4v1710000000000!5m2!1sen!2s" 
+            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        
+        <div class="location-badge">
+          <i class="fas fa-map-pin" style="color: #ffd966;"></i> Erbil, Kurdistan Region
+        </div>
+
+        <div class="tagline">
+          <span class="tagline-item"><i class="fas fa-cube"></i> 3D artist</span>
+          <span class="tagline-item"><i class="fas fa-code"></i> code alchemist</span>
+          <span class="tagline-item"><i class="fas fa-sun"></i> capturing light</span>
+        </div>
+        
+        <!-- YOUR SPECIFIC HANDLES (prominently displayed) -->
+        <div style="margin: 0.8rem 0;">
+          <div class="handle-row"><i class="fab fa-instagram" style="color:#e4405f;"></i> <span>@c0uldl</span></div>
+          <div class="handle-row"><i class="fab fa-telegram" style="color:#2ca5e0;"></i> <span>@Could001</span></div>
+          <div class="handle-row"><i class="fab fa-discord" style="color:#5865f2;"></i> <span>could.fish0</span></div>
+          <div class="handle-row"><i class="fas fa-envelope" style="color:#ea4335;"></i> <span>couldfish01@gmail.com</span></div>
+          <div class="handle-row"><i class="fab fa-github" style="color:#f5f5f5;"></i> <span>couldfish</span></div>
+        </div>
+
+        <div class="social-links">
+          <a href="https://instagram.com/c0uldl" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+          <a href="https://t.me/Could001" class="social-icon" target="_blank"><i class="fab fa-telegram"></i></a>
+          <a href="https://github.com/couldfish" class="social-icon" target="_blank"><i class="fab fa-github"></i></a>
+          <a href="mailto:couldfish01@gmail.com" class="social-icon"><i class="fas fa-envelope"></i></a>
+        </div>
+        <div class="foot-note">
+          <i class="fa-regular fa-eye"></i> 3D citadel + live map · scroll ↓
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: WORKS (projects) - with same handles context -->
+    <section class="section" id="works">
+      <div class="glass-card">
+        <h2 class="section-header"><i class="fas fa-palette"></i> selected works</h2>
+        <div class="work-grid">
+          <div class="work-item"><i class="fas fa-cube"></i> <span>WebGL experiments</span> <small style="margin-left:auto; opacity:0.7;">’25</small></div>
+          <div class="work-item"><i class="fas fa-water"></i> <span>Fluid simulation</span> <small style="margin-left:auto;">’24</small></div>
+          <div class="work-item"><i class="fas fa-fish"></i> <span>Generative fish</span> <small style="margin-left:auto;">’24</small></div>
+          <div class="work-item"><i class="fas fa-vr-cardboard"></i> <span>AR filters</span> <small style="margin-left:auto;">’23</small></div>
+        </div>
+        <!-- quick handle reminder -->
+        <div style="display:flex; justify-content:center; gap:1.5rem; margin-top:1.5rem; font-size:0.9rem; opacity:0.8;">
+          <span><i class="fab fa-instagram"></i> @c0uldl</span>
+          <span><i class="fab fa-github"></i> couldfish</span>
+        </div>
+        <div class="foot-note">
+          <i class="fa-regular fa-compass"></i> more every moon
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: CONTACT - detailed handles (your info) -->
+    <section class="section" id="contact">
+      <div class="glass-card">
+        <h2 class="section-header"><i class="fas fa-envelope"></i> reach out</h2>
+        <div class="contact-grid">
+          <div class="contact-item"><i class="fas fa-envelope"></i> couldfish01@gmail.com</div>
+          <div class="contact-item"><i class="fab fa-telegram"></i> @Could001</div>
+          <div class="contact-item"><i class="fab fa-discord"></i> could.fish0</div>
+          <div class="contact-item"><i class="fab fa-instagram"></i> @c0uldl</div>
+          <div class="contact-item"><i class="fab fa-github"></i> couldfish</div>
+        </div>
+        <div class="social-links" style="margin-top:2rem;">
+          <a href="https://instagram.com/c0uldl" class="social-icon" target="_blank"><i class="fab fa-instagram"></i></a>
+          <a href="https://t.me/Could001" class="social-icon" target="_blank"><i class="fab fa-telegram"></i></a>
+          <a href="mailto:couldfish01@gmail.com" class="social-icon"><i class="fas fa-envelope"></i></a>
+          <a href="https://github.com/couldfish" class="social-icon" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+        <div class="foot-note">
+          <i class="fa-regular fa-star"></i> let’s connect
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: EXTRA / ERBIL CITADEL VIBE -->
+    <section class="section" id="extra">
+      <div class="glass-card" style="text-align:center;">
+        <div style="font-size:4rem; margin-bottom:1rem;">🏰</div>
+        <h2 class="section-header">Erbil citadel</h2>
+        <p style="font-size:1.2rem; max-width:400px; margin:1rem auto;">ancient heart, future code — the 3D citadel floats behind.</p>
+        <div style="background:rgba(0,0,0,0.3); border-radius:40px; padding:1rem; margin-top:1.5rem;">
+          <i class="fas fa-map-marked-alt" style="color:gold;"></i> 36.191°N, 44.009°E
+        </div>
+        <div style="margin-top:1.5rem; display:flex; justify-content:center; gap:1.2rem; flex-wrap:wrap;">
+          <span><i class="fab fa-instagram"></i> @c0uldl</span>
+          <span><i class="fab fa-github"></i> couldfish</span>
+        </div>
+        <div class="foot-note">
+          <i class="fa-regular fa-eye"></i> #Erbil
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Three.js import -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    // ----- 3D SCENE (with Erbil citadel) -----
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('three-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040a18);
+    scene.fog = new THREE.FogExp2(0x040a18, 0.01);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2, 22);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    canvas.appendChild(renderer.domElement);
+
+    // lights
+    const ambient = new THREE.AmbientLight(0x40406b);
+    scene.add(ambient);
+    const pl1 = new THREE.PointLight(0x3377ff, 1.3, 30);
+    pl1.position.set(5, 2, 8);
+    scene.add(pl1);
+    const pl2 = new THREE.PointLight(0xffaa66, 0.9, 30);
+    pl2.position.set(-6, -3, 10);
+    scene.add(pl2);
+
+    // core sphere group
+    const coreGroup = new THREE.Group();
+    const coreGeo = new THREE.SphereGeometry(2.4, 80, 80);
+    const coreMat = new THREE.MeshPhongMaterial({ color: 0x5a9cff, emissive: 0x102035, transparent: true, opacity: 0.2 });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    core.position.set(0,0,1);
+    coreGroup.add(core);
+
+    const innerGeo = new THREE.SphereGeometry(1.1, 40);
+    const innerMat = new THREE.MeshStandardMaterial({ color: 0x88bbff, emissive: 0x224488, transparent: true, opacity: 0.5 });
+    const inner = new THREE.Mesh(innerGeo, innerMat);
+    inner.position.set(0,0,1.3);
+    coreGroup.add(inner);
+    scene.add(coreGroup);
+
+    // ----- 3D ERBIL CITADEL (detailed) -----
+    const citadelGroup = new THREE.Group();
+    
+    const moundGeo = new THREE.CylinderGeometry(2.8, 3.2, 1.2, 8);
+    const moundMat = new THREE.MeshStandardMaterial({ color: 0x9c7a4d, emissive: 0x221100 });
+    const mound = new THREE.Mesh(moundGeo, moundMat);
+    mound.position.y = -0.2;
+    mound.rotation.y = 0.3;
+    citadelGroup.add(mound);
+
+    for (let i=0; i<16; i++) {
+      const angle = (i/16)*Math.PI*2;
+      const wallGeo = new THREE.BoxGeometry(0.5, 0.9, 0.5);
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xb78a5e });
+      const wall = new THREE.Mesh(wallGeo, wallMat);
+      wall.position.set(Math.cos(angle)*2.1, 0.35, Math.sin(angle)*2.1);
+      wall.rotation.y = angle;
+      citadelGroup.add(wall);
+    }
+
+    for (let j=0; j<14; j++) {
+      const ang = (j/14)*Math.PI*2;
+      const rad = 1.4;
+      const houseGeo = new THREE.BoxGeometry(0.5, 0.7 + Math.random()*0.4, 0.5);
+      const houseMat = new THREE.MeshStandardMaterial({ color: 0xc79a6e });
+      const house = new THREE.Mesh(houseGeo, houseMat);
+      house.position.set(Math.cos(ang)*rad, 0.5, Math.sin(ang)*rad);
+      house.rotation.y = ang;
+      citadelGroup.add(house);
+    }
+
+    const gateGeo = new THREE.CylinderGeometry(0.4, 0.5, 0.8, 6);
+    const gateMat = new THREE.MeshStandardMaterial({ color: 0xaa8866 });
+    const gate = new THREE.Mesh(gateGeo, gateMat);
+    gate.position.set(1.8, 0.4, 0.8);
+    gate.rotation.z = 0.3;
+    citadelGroup.add(gate);
+
+    const towerGeo = new THREE.CylinderGeometry(0.8, 0.9, 1.8, 8);
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0xcc9966 });
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.set(0, 1.0, 0);
+    citadelGroup.add(tower);
+
+    const domeGeo = new THREE.SphereGeometry(0.6, 6);
+    const domeMat = new THREE.MeshStandardMaterial({ color: 0xddb279 });
+    const dome = new THREE.Mesh(domeGeo, domeMat);
+    dome.position.set(0, 2.0, 0);
+    dome.scale.set(1, 0.4, 1);
+    citadelGroup.add(dome);
+
+    citadelGroup.position.set(-2.5, -0.3, -1.2);
+    scene.add(citadelGroup);
+
+    // torus knots
+    const knotMat1 = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x1a3366, transparent: true, opacity: 0.25 });
+    const knot1 = new THREE.Mesh(new THREE.TorusKnotGeometry(2.0, 0.3, 140, 12, 3, 4), knotMat1);
+    knot1.position.set(0,0,0.8);
+    knot1.rotation.x = 0.5;
+    knot1.rotation.y = 0.8;
+    scene.add(knot1);
+
+    const knotMat2 = new THREE.MeshStandardMaterial({ color: 0xffaa88, emissive: 0x331122, transparent: true, opacity: 0.2 });
+    const knot2 = new THREE.Mesh(new THREE.TorusKnotGeometry(2.8, 0.2, 160, 16, 2, 3), knotMat2);
+    knot2.position.set(0,0,-0.5);
+    knot2.rotation.x = 1.2;
+    knot2.rotation.y = 0.3;
+    scene.add(knot2);
+
+    // particle cloud
+    const pGroup = new THREE.Group();
+    const pGeo = new THREE.SphereGeometry(0.06, 4);
+    for (let i=0; i<800; i++) {
+      const col = new THREE.Color().setHSL(0.6+Math.random()*0.3, 0.8, 0.6);
+      const mat = new THREE.MeshStandardMaterial({ color: col, emissive: 0x112244 });
+      const sp = new THREE.Mesh(pGeo, mat);
+      const r = 5 + Math.random()*14;
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos(2*Math.random()-1);
+      sp.position.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi)-2);
+      pGroup.add(sp);
+    }
+    scene.add(pGroup);
+
+    // fish shapes
+    const fishGroup = new THREE.Group();
+    for (let j=0; j<45; j++) {
+      const len = 0.2+Math.random()*0.6;
+      const fishMat = new THREE.MeshStandardMaterial({ color: 0x77ccff, emissive: 0x113355 });
+      const fish = new THREE.Mesh(new THREE.ConeGeometry(len*0.3, len, 5), fishMat);
+      fish.position.set((Math.random()-0.5)*18, (Math.random()-0.5)*12, (Math.random()-0.5)*16-2);
+      fish.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+      fishGroup.add(fish);
+    }
+    scene.add(fishGroup);
+
+    // stars
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(2000*3);
+    for (let i=0; i<2000; i++) {
+      const r = 45+Math.random()*80;
+      const th = Math.random()*Math.PI*2;
+      const ph = Math.acos(2*Math.random()-1);
+      starPos[i*3] = r*Math.sin(ph)*Math.cos(th);
+      starPos[i*3+1] = r*Math.sin(ph)*Math.sin(th);
+      starPos[i*3+2] = r*Math.cos(ph)-25;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbbddff, size: 0.22 }));
+    scene.add(stars);
+
+    // scroll interaction
+    let targetRotationY = 0;
+    let targetKnotScale = 1;
+    let targetCameraZ = 22;
+    const sections = document.querySelectorAll('.section');
+    const dots = document.querySelectorAll('.nav-dot');
+
+    function update3DForSection(index) {
+      switch(index) {
+        case 0: targetRotationY = 0.8; targetKnotScale = 1.0; targetCameraZ = 22; break;
+        case 1: targetRotationY = 2.5; targetKnotScale = 1.2; targetCameraZ = 24; break;
+        case 2: targetRotationY = 4.0; targetKnotScale = 0.9; targetCameraZ = 20; break;
+        case 3: targetRotationY = 5.5; targetKnotScale = 1.4; targetCameraZ = 26; break;
+      }
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          let index = 0;
+          if (id === 'home') index = 0;
+          else if (id === 'works') index = 1;
+          else if (id === 'contact') index = 2;
+          else if (id === 'extra') index = 3;
+          
+          dots.forEach((d, i) => {
+            if (i === index) d.classList.add('active');
+            else d.classList.remove('active');
+          });
+          update3DForSection(index);
+        }
+      });
+    }, { threshold: 0.6 });
+
+    sections.forEach(s => observer.observe(s));
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        sections[i].scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // animation
+    let currentRotY = 0.8;
+    let currentScale = 1;
+    let currentCamZ = 22;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      currentRotY += (targetRotationY - currentRotY) * 0.03;
+      currentScale += (targetKnotScale - currentScale) * 0.03;
+      currentCamZ += (targetCameraZ - currentCamZ) * 0.03;
+
+      coreGroup.rotation.y += 0.001;
+      knot1.rotation.y += 0.002;
+      knot2.rotation.x += 0.0015;
+      knot2.rotation.y += 0.001;
+      
+      knot1.rotation.z = currentRotY * 0.2;
+      knot2.rotation.z = currentRotY * 0.15;
+      
+      knot1.scale.set(currentScale, currentScale, currentScale);
+      knot2.scale.set(1.2 - (currentScale-1)*0.3, 1.2 - (currentScale-1)*0.3, 1.2 - (currentScale-1)*0.3);
+      
+      camera.position.z += (currentCamZ - camera.position.z) * 0.03;
+      
+      citadelGroup.rotation.y += 0.0008;
+      citadelGroup.position.y = Math.sin(Date.now() * 0.0012) * 0.15;
+      
+      pGroup.rotation.y += 0.0003;
+      fishGroup.rotation.y += 0.0005;
+
+      camera.position.x = Math.sin(Date.now() * 0.0008) * 1.5 + (targetRotationY * 0.2);
+      camera.lookAt(0, 0, 2);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    update3DForSection(0);
+  </script>
+</body>
+</html>
